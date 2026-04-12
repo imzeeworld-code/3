@@ -1,196 +1,66 @@
-# Web Codding AIDE
+# Web Coding AIDE
 
-A powerful, mobile-first web IDE designed for serious developers. Code, preview, and deploy directly from your phone in landscape mode.
+  A powerful, mobile-first web development IDE that runs entirely in your browser.
 
-## Features
+  ## Features
 
-### Core IDE
-- **Landscape-Only Interface**: Full-screen rotate prompt in portrait mode; all IDE features unlock in landscape
-- **Split-Screen Editor**: Live code editor on the left with syntax highlighting, real-time preview on the right
-- **Multi-File Support**: Switch between HTML, CSS, and JavaScript files with tab-based navigation
-- **CodeMirror Integration**: Professional syntax highlighting with language-specific support
-- **Live Preview**: Instant rendering of your code changes in a sandboxed iframe
-- **Error Console**: Capture and display console logs, warnings, and runtime errors from your preview
+  - **Split-screen editor + live preview** — Code on the left, see results instantly on the right
+  - **Multi-file support** — HTML, CSS, JavaScript, TypeScript, JSON, Markdown tabs
+  - **Syntax highlighting** — Language-aware coloring for all supported file types
+  - **Auto-complete** — Smart suggestions as you type
+  - **Error detection** — Real-time syntax error checking with line numbers
+  - **Download HTML** — Export your full project as a single `index.html` file
+  - **GitHub integration** — Push/pull files to any GitHub repository using a personal access token
+  - **Drag & Drop** — Drop files directly into the editor to open them
+  - **Mobile-optimized** — Designed for phone use in landscape mode
+  - **Landscape rotation prompt** — Asks users to rotate their phone for the best experience
+  - **Font size controls** — A- / A+ buttons to adjust code font size
+  - **Line numbers** — Toggle line numbers on/off
+  - **Auto-refresh preview** — Preview updates as you type (with debounce)
+  - **Local persistence** — Your code is saved to browser localStorage automatically
 
-### Developer Tools
-- **Download Projects**: Export complete, self-contained HTML files with inlined CSS and JavaScript
-- **GitHub Integration**: Push your code directly to GitHub repositories with token authentication
-- **Backend Configuration**: Configure Firebase, Supabase, and Cloudinary credentials with code generation
-- **Error Detection**: Real-time syntax and runtime error detection with inline reporting
+  ## Supported Languages
 
-### Mobile Optimization
-- **Touch-Friendly UI**: Optimized controls and spacing for mobile devices
-- **Responsive Layout**: Adapts seamlessly to different phone screen sizes in landscape
-- **No Overflow**: All content remains visible without clipping or truncation
-- **Smooth Scrolling**: Efficient scrolling for both editor and preview panels
+  | Language | Extension | Features |
+  |----------|-----------|---------|
+  | HTML | .html | Tag highlighting, attribute colors, doctype detection |
+  | CSS | .css | Property/value/selector highlighting |
+  | JavaScript | .js | Keyword, string, function highlighting |
+  | TypeScript | .ts/.tsx | Full JS highlighting + TS keywords |
+  | JSON | .json | Key/value color coding + live validation |
+  | Markdown | .md | Basic rendering |
 
-## Getting Started
+  ## GitHub Integration
 
-### Installation
+  1. Click **GitHub** in the toolbar
+  2. Enter your Personal Access Token (with `repo` scope)
+  3. Enter your repository name (`username/repo-name` or full GitHub URL)
+  4. Browse and load files, or push your current files to the repo
+  5. Get your GitHub Pages live URL automatically
 
-```bash
-cd web-codding-aide
-pnpm install
-pnpm dev
-```
+  ## Download
 
-The app will start on `http://localhost:3000`.
+  - **Download `filename`** — Downloads the current open file
+  - **Download HTML** — Bundles ALL your files (HTML + CSS + JS) into one portable `index.html`
 
-### Usage
+  ## Mobile Use
 
-1. **Open the App**: Navigate to the home page and click "Launch IDE"
-2. **Rotate Your Phone**: The IDE requires landscape orientation
-3. **Start Coding**: Edit HTML, CSS, or JavaScript in the left panel
-4. **See Changes**: The right panel updates in real-time with your code
-5. **Download or Push**: Use the toolbar buttons to download or push to GitHub
+  This app is designed for mobile phones. For the best experience:
+  - Rotate your phone to **landscape mode**
+  - The split view gives you the editor on the left and preview on the right
+  - Drag the divider between panels to resize
+  - Use touch to scroll inside each panel
 
-## Architecture
+  ## Tech Stack
 
-### Frontend
-- **React 19**: Modern UI framework with hooks
-- **Tailwind CSS 4**: Utility-first styling with dark theme
-- **CodeMirror 6**: Professional code editor with syntax highlighting
-- **Wouter**: Lightweight routing for single-page app
+  - React + TypeScript + Vite
+  - Tailwind CSS
+  - Custom syntax highlighter (no external parser dependencies)
+  - GitHub REST API v3
+  - localStorage for persistence
+  - Blob URLs for live preview iframe
 
-### Backend
-- **Express 4**: Lightweight web server
-- **tRPC 11**: End-to-end type-safe API
-- **Drizzle ORM**: Type-safe database queries
-- **MySQL/TiDB**: Persistent data storage
+  ## License
 
-### Key Components
-- `IDE.tsx`: Main IDE page with landscape detection
-- `CodeEditor.tsx`: CodeMirror-powered editor component
-- `ErrorConsole.tsx`: Console output and error display
-- `GitHubIntegration.tsx`: GitHub push functionality
-- `BackendConfig.tsx`: Backend service configuration
-
-## Project Structure
-
-```
-client/
-  src/
-    pages/
-      Home.tsx          # Landing page with feature highlights
-      IDE.tsx           # Main IDE interface
-    components/
-      CodeEditor.tsx    # CodeMirror editor
-      ErrorConsole.tsx  # Console/error panel
-      GitHubIntegration.tsx  # GitHub push UI
-      BackendConfig.tsx # Backend config dialog
-    lib/
-      trpc.ts          # tRPC client setup
-    App.tsx            # Main app router
-    index.css          # Global styles with dark theme
-
-server/
-  routers.ts           # tRPC procedure definitions
-  routers/
-    github.ts          # GitHub integration router
-  db.ts               # Database queries
-  _core/              # Framework internals
-
-drizzle/
-  schema.ts           # Database schema
-```
-
-## Mobile Optimization
-
-The app is built mobile-first with landscape orientation as the primary target:
-
-- **Landscape Detection**: Automatic detection with portrait overlay prompt
-- **Touch-Optimized**: Buttons and controls sized for touch interaction
-- **No Truncation**: All UI elements remain fully visible on standard phone displays
-- **Efficient Scrolling**: Separate scroll areas for editor, preview, and console
-- **Performance**: Optimized rendering for smooth interactions on mobile devices
-
-## Backend Integration
-
-### Firebase
-Configure Firebase credentials to use real-time database and authentication:
-- API Key
-- Project ID
-- Database URL
-
-### Supabase
-Set up Supabase for PostgreSQL backend:
-- Project URL
-- Anon Key
-
-### Cloudinary
-Configure image storage and transformation:
-- Cloud Name
-- Upload Preset
-
-## GitHub Integration
-
-Push your projects to GitHub directly from the IDE:
-
-1. Generate a personal access token at [github.com/settings/tokens](https://github.com/settings/tokens)
-2. Click the GitHub button in the IDE toolbar
-3. Enter your token and repository name
-4. Click "Push to GitHub"
-
-Your code will be pushed as `index.html` to the specified repository.
-
-## Development
-
-### Running Tests
-```bash
-pnpm test
-```
-
-### Building for Production
-```bash
-pnpm build
-pnpm start
-```
-
-### Code Style
-The project uses Prettier for formatting:
-```bash
-pnpm format
-```
-
-## Performance Considerations
-
-- **Large Files**: The editor handles large codebases efficiently with CodeMirror's virtual rendering
-- **Live Preview**: Preview updates are optimized to prevent excessive iframe reloads
-- **Console Capture**: Error console captures logs without impacting performance
-
-## Browser Support
-
-- Chrome/Chromium (recommended)
-- Firefox
-- Safari (mobile)
-- Edge
-
-**Note**: Best experience on modern mobile browsers with landscape orientation support.
-
-## Limitations
-
-- **Sandbox Restrictions**: Preview iframe runs in a sandboxed environment for security
-- **Local Storage**: No persistent file storage (download or push to GitHub to save)
-- **External Resources**: Limited ability to load external scripts/stylesheets in preview
-- **GitHub API**: Requires valid personal access token with repository permissions
-
-## Future Enhancements
-
-- Multi-language support (TypeScript, JSX, etc.)
-- Project templates and snippets
-- Collaborative editing
-- Version history and undo/redo
-- Advanced debugging tools
-- Mobile app distribution
-
-## License
-
-MIT
-
-## Support
-
-For issues, feature requests, or questions, please open an issue on GitHub.
-
----
-
-**Web Codding AIDE** - Code anywhere, anytime, on any device.
+  MIT
+  

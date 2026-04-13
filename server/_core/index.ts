@@ -35,6 +35,49 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+
+  // GitHub Push API for the client component
+  app.post("/api/github/push", async (req, res) => {
+    try {
+      const { token, repoName, content, message } = req.body;
+      
+      if (!token || !repoName) {
+        return res.status(400).json({ error: "Token and repository name are required" });
+      }
+
+      // We'll use the same logic as the frontend but on the server
+      // to avoid CORS issues if the user prefers server-side push
+      const response = await fetch(`https://api.github.com/repos/${repoName}/contents/index.html`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token.trim()}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+          'User-Agent': 'Web-Coding-AIDE',
+        },
+        body: JSON.stringify({
+          message: message || 'Update via Web Coding AIDE',
+          content: Buffer.from(content || '').toString('base64'),
+          branch: 'main'
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        return res.status(response.status).json({ error: err.message || "GitHub API error" });
+      }
+
+      const data = await response.json();
+      res.json({ 
+        success: true, 
+        url: data.content?.html_url || `https://github.com/${repoName}` 
+      });
+    } catch (error) {
+      console.error("GitHub push error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",

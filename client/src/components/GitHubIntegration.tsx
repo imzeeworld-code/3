@@ -28,17 +28,18 @@ export default function GitHubIntegration({ projectHTML }: GitHubIntegrationProp
       const blob = new Blob([projectHTML], { type: 'text/html' });
       const file = new File([blob], 'index.html', { type: 'text/html' });
 
-      // Prepare form data
-      const formData = new FormData();
-      formData.append('token', token.trim());
-      formData.append('repoName', repoName);
-      formData.append('file', file);
-      formData.append('message', 'Upload from Web Codding AIDE');
-
-      // Call backend API
+      // Call backend API with JSON
       const response = await fetch('/api/github/push', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token: token.trim(),
+          repoName: repoName,
+          content: projectHTML,
+          message: 'Upload from Web Codding AIDE',
+        }),
       });
 
       if (!response.ok) {

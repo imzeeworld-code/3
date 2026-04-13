@@ -14,28 +14,47 @@ export interface GitHubRepo {
 }
 
 export async function fetchRepoInfo(token: string, repo: string): Promise<GitHubRepo> {
-  const res = await fetch(`https://api.github.com/repos/${repo}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github.v3+json',
-    },
-  });
-  if (!res.ok) throw new Error(`GitHub API error: ${res.status} ${res.statusText}`);
-  return res.json();
+  try {
+    const res = await fetch(`https://api.github.com/repos/${repo}`, {
+      headers: {
+        Authorization: `Bearer ${token.trim()}`,
+        Accept: 'application/vnd.github.v3+json',
+      },
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || `GitHub API error: ${res.status} ${res.statusText}`);
+    }
+    return res.json();
+  } catch (err) {
+    console.error('fetchRepoInfo error:', err);
+    if (err instanceof TypeError && err.message === 'Failed to fetch') {
+      throw new Error('Network error: Could not reach GitHub API. Check your internet or token scopes.');
+    }
+    throw err;
+  }
 }
 
 export async function fetchRepoContents(token: string, repo: string, path = ''): Promise<GitHubFile[]> {
   const url = path
     ? `https://api.github.com/repos/${repo}/contents/${path}`
     : `https://api.github.com/repos/${repo}/contents`;
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github.v3+json',
-    },
-  });
-  if (!res.ok) throw new Error(`GitHub API error: ${res.status} ${res.statusText}`);
-  return res.json();
+  try {
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token.trim()}`,
+        Accept: 'application/vnd.github.v3+json',
+      },
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || `GitHub API error: ${res.status} ${res.statusText}`);
+    }
+    return res.json();
+  } catch (err) {
+    console.error('fetchRepoContents error:', err);
+    throw err;
+  }
 }
 
 export async function fetchFileContent(token: string, downloadUrl: string): Promise<string> {

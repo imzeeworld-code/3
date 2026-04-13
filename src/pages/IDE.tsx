@@ -145,22 +145,58 @@ export default function IDE() {
   const handleUploadFile = () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.html,.css,.js,.ts,.tsx,.jsx,.json,.md,.txt';
+    // Broaden accepted types for better mobile compatibility
+    // Including specific extensions and generic text/* for maximum device support
+    input.accept = '.html,.htm,.css,.js,.ts,.tsx,.jsx,.json,.md,.txt,text/*';
     input.multiple = true;
-    input.onchange = async () => {
-      if (!input.files) return;
+    
+    // Use a more robust change handler
+    input.onchange = async (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      if (!target.files || target.files.length === 0) return;
+      
+      const fileList = Array.from(target.files);
       const results: Omit<FileTab, 'modified'>[] = [];
-      for (const file of Array.from(input.files)) {
-        const content = await file.text();
-        results.push({
-          id: `upload-${Date.now()}-${file.name}`,
-          name: file.name,
-          language: detectLanguage(file.name),
-          content,
-        });
+      
+      for (const file of fileList) {
+        // Skip files larger than 5MB to prevent browser crashes
+        if (file.size > 5 * 1024 * 1024) {
+          addToast(`${file.name} is too large (max 5MB)`, 'error');
+          continue;
+        }
+
+        try {
+          const content = await file.text();
+          results.push({
+            id: `upload-${Date.now()}-${file.name}`,
+            name: file.name,
+            language: detectLanguage(file.name),
+            content,
+          });
+        } catch (err) {
+          console.error(`Error reading file ${file.name}:`, err);
+          addToast(`Failed to read ${file.name}`, 'error');
+        }
       }
-      handleDropFiles(results);
+      
+      if (results.length > 0) {
+        handleDropFiles(results);
+        addToast(`Successfully loaded ${results.length} file(s)`, 'success');
+      }
+      
+      // Clean up the input from DOM after processing
+      if (input.parentNode) {
+        document.body.removeChild(input);
+      }
     };
+    
+    // Critical for mobile: the input MUST be in the DOM and visible (even if opacity 0)
+    // to trigger the native file picker reliably on some versions of iOS/Android.
+    input.style.position = 'fixed';
+    input.style.top = '-100px';
+    input.style.left = '-100px';
+    input.style.opacity = '0';
+    document.body.appendChild(input);
     input.click();
   };
   

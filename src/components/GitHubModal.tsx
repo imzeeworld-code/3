@@ -63,9 +63,10 @@ export default function GitHubModal({ onClose, onLoadFile, tabs, onToast }: GitH
       setStatus(`Connected to ${info.full_name}`);
       onToast(`Connected to ${info.full_name}`, 'success');
     } catch (e: unknown) {
+      console.error('GitHub connection error:', e);
       const msg = e instanceof Error ? e.message : 'Connection failed';
       setStatus(`Error: ${msg}`);
-      onToast(msg, 'error');
+      onToast(`Connection failed: ${msg}`, 'error');
     } finally {
       setLoading(false);
     }
@@ -110,17 +111,25 @@ export default function GitHubModal({ onClose, onLoadFile, tabs, onToast }: GitH
       
       for (const tab of tabs) {
         setStatus(`Pushing ${tab.name}...`);
-        const sha = await getFileSha(token, repo, tab.name);
-        await pushFileToGitHub(token, repo, branch, tab.name, tab.content, commitMsg, sha);
-        successCount++;
+        try {
+          const sha = await getFileSha(token, repo, tab.name);
+          await pushFileToGitHub(token, repo, branch, tab.name, tab.content, commitMsg, sha);
+          successCount++;
+        } catch (fileError) {
+          console.error(`Failed to push ${tab.name}:`, fileError);
+          // Continue with other files if one fails? 
+          // For now, let's stop and report.
+          throw fileError;
+        }
       }
       
       setStatus(`Pushed ${successCount} file(s) successfully!`);
       onToast(`Pushed ${successCount} file(s) to ${repo}`, 'success');
     } catch (e: unknown) {
+      console.error('GitHub push error:', e);
       const msg = e instanceof Error ? e.message : 'Push failed';
       setStatus(`Error: ${msg}`);
-      onToast(msg, 'error');
+      onToast(`Push failed: ${msg}`, 'error');
     } finally {
       setPushing(false);
     }

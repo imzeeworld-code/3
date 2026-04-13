@@ -36,17 +36,43 @@ async function startServer() {
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
 
-  // GitHub Push API for the client component
+  // GitHub Proxy API to handle CORS and multi-file pushes
+  app.post("/api/github/proxy", async (req, res) => {
+    try {
+      const { token, endpoint, method, body } = req.body;
+      
+      if (!token || !endpoint) {
+        return res.status(400).json({ error: "Token and endpoint are required" });
+      }
+
+      const response = await fetch(`https://api.github.com${endpoint}`, {
+        method: method || 'GET',
+        headers: {
+          'Authorization': `Bearer ${token.trim()}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+          'User-Agent': 'Web-Coding-AIDE',
+        },
+        body: body ? JSON.stringify(body) : undefined
+      });
+
+      const data = await response.json().catch(() => ({}));
+      
+      if (!response.ok) {
+        return res.status(response.status).json({ error: data.message || "GitHub API error", details: data });
+      }
+
+      res.json(data);
+    } catch (error) {
+      console.error("GitHub proxy error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Legacy push endpoint for backward compatibility
   app.post("/api/github/push", async (req, res) => {
     try {
       const { token, repoName, content, message } = req.body;
-      
-      if (!token || !repoName) {
-        return res.status(400).json({ error: "Token and repository name are required" });
-      }
-
-      // We'll use the same logic as the frontend but on the server
-      // to avoid CORS issues if the user prefers server-side push
       const response = await fetch(`https://api.github.com/repos/${repoName}/contents/index.html`, {
         method: 'PUT',
         headers: {
@@ -61,19 +87,10 @@ async function startServer() {
           branch: 'main'
         })
       });
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        return res.status(response.status).json({ error: err.message || "GitHub API error" });
-      }
-
-      const data = await response.json();
-      res.json({ 
-        success: true, 
-        url: data.content?.html_url || `https://github.com/${repoName}` 
-      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) return res.status(response.status).json({ error: data.message || "GitHub API error" });
+      res.json({ success: true, url: data.content?.html_url || `https://github.com/${repoName}` });
     } catch (error) {
-      console.error("GitHub push error:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });

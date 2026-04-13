@@ -13,56 +13,52 @@ export interface GitHubRepo {
   description: string | null;
 }
 
-export async function fetchRepoInfo(token: string, repo: string): Promise<GitHubRepo> {
-  try {
-    const res = await fetch(`https://api.github.com/repos/${repo}`, {
-      headers: {
-        Authorization: `Bearer ${token.trim()}`,
-        Accept: 'application/vnd.github.v3+json',
-      },
-    });
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || `GitHub API error: ${res.status} ${res.statusText}`);
-    }
-    return res.json();
-  } catch (err) {
-    console.error('fetchRepoInfo error:', err);
-    if (err instanceof TypeError && err.message === 'Failed to fetch') {
-      throw new Error('Network error: Could not reach GitHub API. Check your internet or token scopes.');
-    }
-    throw err;
+async function githubProxy(token: string, endpoint: string, method = 'GET', body?: any) {
+  const res = await fetch('/api/github/proxy', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      token: token.trim(),
+      endpoint,
+      method,
+      body
+    }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `GitHub Proxy error: ${res.status}`);
   }
+
+  return res.json();
+}
+
+export async function fetchRepoInfo(token: string, repo: string): Promise<GitHubRepo> {
+  return githubProxy(token, `/repos/${repo}`);
 }
 
 export async function fetchRepoContents(token: string, repo: string, path = ''): Promise<GitHubFile[]> {
-  const url = path
-    ? `https://api.github.com/repos/${repo}/contents/${path}`
-    : `https://api.github.com/repos/${repo}/contents`;
-  try {
-    const res = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token.trim()}`,
-        Accept: 'application/vnd.github.v3+json',
-      },
-    });
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || `GitHub API error: ${res.status} ${res.statusText}`);
-    }
-    return res.json();
-  } catch (err) {
-    console.error('fetchRepoContents error:', err);
-    throw err;
-  }
+  const endpoint = path ? `/repos/${repo}/contents/${path}` : `/repos/${repo}/contents`;
+  return githubProxy(token, endpoint);
 }
 
 export async function fetchFileContent(token: string, downloadUrl: string): Promise<string> {
-  const res = await fetch(downloadUrl, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  // downloadUrl is usually a direct link to raw.githubusercontent.com
+  // but it can also be a GitHub API URL for contents.
+  // If it's a raw URL, we might still face CORS, so let's try to fetch it via proxy if it's a github URL.
+  if (downloadUrl.includes('api.github.com')) {
+    const endpoint = downloadUrl.split('api.github.com')[1];
+    const data = await githubProxy(token, endpoint);
+    if (data.content && data.encoding === 'base64') {
+      return decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
+    }
+    throw new Error('Unexpected file content format');
+  }
+  
+  // Fallback for non-API URLs
+  const res = await fetch(downloadUrl);
   if (!res.ok) throw new Error(`Failed to fetch file: ${res.status}`);
   return res.text();
 }
@@ -86,22 +82,8 @@ export async function pushFileToGitHub(
   
   if (existingSha) body.sha = existingSha;
   
-  const res = await fetch(`https://api.github.com/repos/${repo}/contents/${filePath}`, {
-    method: 'PUT',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github.v3+json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
+  const data = await githubProxy(token, `/repos/${repo}/contents/${filePath}`, 'PUT', body);
   
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `GitHub push error: ${res.status}`);
-  }
-  
-  const data = await res.json();
   return {
     success: true,
     url: data.content?.html_url || `https://github.com/${repo}/blob/${branch}/${filePath}`,
@@ -110,14 +92,7 @@ export async function pushFileToGitHub(
 
 export async function getFileSha(token: string, repo: string, path: string): Promise<string | undefined> {
   try {
-    const res = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/vnd.github.v3+json',
-      },
-    });
-    if (!res.ok) return undefined;
-    const data = await res.json();
+    const data = await githubProxy(token, `/repos/${repo}/contents/${path}`);
     return data.sha;
   } catch {
     return undefined;
@@ -132,10 +107,15 @@ export async function getRawFileUrl(token: string, repo: string, branch: string,
 
 export function getGitHubPagesUrl(repo: string): string {
   const [owner, repoName] = repo.split('/');
-  if (repoName.toLowerCase() === `${owner.toLowerCase()}.github.io`) {
-    return `https://${owner.toLowerCase()}.github.io/`;
+  if (!owner || !repoName) return '';
+  
+  const lowerOwner = owner.toLowerCase();
+  const lowerRepo = repoName.toLowerCase();
+  
+  if (lowerRepo === `${lowerOwner}.github.io`) {
+    return `https://${lowerOwner}.github.io/`;
   }
-  return `https://${owner.toLowerCase()}.github.io/${repoName}/`;
+  return `https://${lowerOwner}.github.io/${repoName}/`;
 }
 
 export function extractRepoFromUrl(url: string): string | null {

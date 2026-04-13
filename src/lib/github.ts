@@ -16,7 +16,7 @@ export interface GitHubRepo {
 export async function fetchRepoInfo(token: string, repo: string): Promise<GitHubRepo> {
   const res = await fetch(`https://api.github.com/repos/${repo}`, {
     headers: {
-      Authorization: `token ${token}`,
+      Authorization: `Bearer ${token}`,
       Accept: 'application/vnd.github.v3+json',
     },
   });
@@ -30,7 +30,7 @@ export async function fetchRepoContents(token: string, repo: string, path = ''):
     : `https://api.github.com/repos/${repo}/contents`;
   const res = await fetch(url, {
     headers: {
-      Authorization: `token ${token}`,
+      Authorization: `Bearer ${token}`,
       Accept: 'application/vnd.github.v3+json',
     },
   });
@@ -41,7 +41,7 @@ export async function fetchRepoContents(token: string, repo: string, path = ''):
 export async function fetchFileContent(token: string, downloadUrl: string): Promise<string> {
   const res = await fetch(downloadUrl, {
     headers: {
-      Authorization: `token ${token}`,
+      Authorization: `Bearer ${token}`,
     },
   });
   if (!res.ok) throw new Error(`Failed to fetch file: ${res.status}`);
@@ -70,7 +70,7 @@ export async function pushFileToGitHub(
   const res = await fetch(`https://api.github.com/repos/${repo}/contents/${filePath}`, {
     method: 'PUT',
     headers: {
-      Authorization: `token ${token}`,
+      Authorization: `Bearer ${token}`,
       Accept: 'application/vnd.github.v3+json',
       'Content-Type': 'application/json',
     },
@@ -93,7 +93,7 @@ export async function getFileSha(token: string, repo: string, path: string): Pro
   try {
     const res = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
       headers: {
-        Authorization: `token ${token}`,
+        Authorization: `Bearer ${token}`,
         Accept: 'application/vnd.github.v3+json',
       },
     });
@@ -113,7 +113,10 @@ export async function getRawFileUrl(token: string, repo: string, branch: string,
 
 export function getGitHubPagesUrl(repo: string): string {
   const [owner, repoName] = repo.split('/');
-  return `https://${owner}.github.io/${repoName}/`;
+  if (repoName.toLowerCase() === `${owner.toLowerCase()}.github.io`) {
+    return `https://${owner.toLowerCase()}.github.io/`;
+  }
+  return `https://${owner.toLowerCase()}.github.io/${repoName}/`;
 }
 
 export function extractRepoFromUrl(url: string): string | null {

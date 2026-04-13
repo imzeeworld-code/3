@@ -31,7 +31,9 @@ export default function GitHubModal({ onClose, onLoadFile, tabs, onToast }: GitH
   const [view, setView] = useState<'main' | 'files'>('main');
   
   const saveToken = () => {
-    localStorage.setItem('gh_token', token);
+    const trimmed = token.trim();
+    setToken(trimmed);
+    localStorage.setItem('gh_token', trimmed);
     onToast('GitHub token saved', 'success');
   };
   

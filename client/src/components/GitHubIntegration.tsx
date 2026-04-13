@@ -30,7 +30,7 @@ export default function GitHubIntegration({ projectHTML }: GitHubIntegrationProp
 
       // Prepare form data
       const formData = new FormData();
-      formData.append('token', token);
+      formData.append('token', token.trim());
       formData.append('repoName', repoName);
       formData.append('file', file);
       formData.append('message', 'Upload from Web Codding AIDE');
